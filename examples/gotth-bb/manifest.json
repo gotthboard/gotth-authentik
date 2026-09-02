@@ -1,0 +1,7 @@
+{
+  "slug": "gotth-bb",
+  "name": "GOTTH Board - self-registration with verified email",
+  "registration_title": "Register for GOTTH Board",
+  "user_path": "users/gotth-bb",
+  "access_group": "gotth-bb-users"
+}
