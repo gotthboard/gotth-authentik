@@ -18,6 +18,39 @@ metadata:
   labels:
     blueprints.goauthentik.io/instantiate: "false"
 entries:
+  - identifiers: {name: {{quote .Provider.Name}}}
+    id: oidc-provider
+    model: authentik_providers_oauth2.oauth2provider
+    attrs:
+      authorization_flow: !Find [authentik_flows.flow, [slug, {{.Provider.AuthorizationFlow}}]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, {{.Provider.InvalidationFlow}}]]
+      client_type: {{.Provider.ClientType}}
+      client_id: {{quote .Provider.ClientID}}
+      redirect_uris:
+{{- range .Provider.RedirectURIs}}
+        - matching_mode: strict
+          url: {{quote .}}
+          redirect_uri_type: authorization
+{{- end}}
+      grant_types: [authorization_code, refresh_token]
+      include_claims_in_id_token: true
+      issuer_mode: per_provider
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, {{quote .Provider.SigningKey}}]]
+
+  - identifiers: {slug: {{.Slug}}}
+    id: application
+    model: authentik_core.application
+    attrs:
+      name: {{quote .Name}}
+      provider: !KeyOf oidc-provider
+{{- if .LaunchURL}}
+      meta_launch_url: {{quote .LaunchURL}}
+{{- end}}
+
   - identifiers: {name: {{.AccessGroup}}}
     id: access-group
     model: authentik_core.group
@@ -88,15 +121,16 @@ entries:
     model: authentik_flows.flowstagebinding
 
   - identifiers:
-      target: !Find [authentik_core.application, [slug, {{.Slug}}]]
+      target: !KeyOf application
       group: !KeyOf access-group
       order: 20
     model: authentik_policies.policybinding
     attrs: {enabled: true, negate: false, failure_result: false}
 `))
 
-// RenderEnrollmentBlueprint returns deterministic Authentik blueprint YAML for
-// verified-email enrollment and a per-application access policy.
+// RenderEnrollmentBlueprint returns a deterministic, secret-free Authentik
+// blueprint for an OIDC provider, application, verified-email enrollment, and
+// per-application access policy.
 func RenderEnrollmentBlueprint(application Application) ([]byte, error) {
 	if err := application.Validate(); err != nil {
 		return nil, err

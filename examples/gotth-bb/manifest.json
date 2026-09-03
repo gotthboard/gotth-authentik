@@ -3,5 +3,15 @@
   "name": "GOTTH Board - self-registration with verified email",
   "registration_title": "Register for GOTTH Board",
   "user_path": "users/gotth-bb",
-  "access_group": "gotth-bb-users"
+  "access_group": "gotth-bb-users",
+  "launch_url": "https://bb.alhstudios.com/",
+  "provider": {
+    "name": "gotth-bb-oidc",
+    "client_type": "confidential",
+    "client_id": "gotth-bb",
+    "redirect_uris": ["https://bb.alhstudios.com/auth/callback"],
+    "authorization_flow": "default-provider-authorization-implicit-consent",
+    "invalidation_flow": "default-provider-invalidation-flow",
+    "signing_key": "authentik Self-signed Certificate"
+  }
 }
