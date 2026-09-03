@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"git.dannyhunn.com/agents/gotth-authentik"
+	"github.com/gotthboard/gotth-authentik"
 )
 
 const maxManifestBytes = 1 << 20

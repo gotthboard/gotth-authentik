@@ -1,3 +1,3 @@
-module git.dannyhunn.com/agents/gotth-authentik
+module github.com/gotthboard/gotth-authentik
 
 go 1.26.6

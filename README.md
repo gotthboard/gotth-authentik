@@ -1,5 +1,10 @@
 # gotth-authentik
 
+> **Distribution:** GitHub is the public clone, Go import, and future release endpoint.
+> Forgejo remains canonical development and the issue/contribution location.
+> See [the distribution contract](docs/distribution.md).
+
+
 `gotth-authentik` is a versioned desired-state and validation toolkit for
 isolated Authentik OIDC applications. One secret-free manifest generates the
 OAuth2 provider, application, verified-email enrollment flow,
@@ -28,3 +33,20 @@ and worker; it imports twice and destroys all disposable state afterward.
 The accepted GOTTH Board alpha.2 blueprint remains provenance. The generic
 example creates a complete application boundary and has been admitted by the
 Authentik 2026.5.2 importer.
+
+## Installation, compatibility, and support
+
+Unreleased. The API and CLI are pre-1.0 and may change until the first tagged compatibility contract.
+
+No post-migration version has been tagged. To inspect the current source
+before the first admitted release:
+
+```sh
+go get github.com/gotthboard/gotth-authentik@main
+go install github.com/gotthboard/gotth-authentik/cmd/gotth-authentik@main
+```
+
+The repository has no selected license and no long-term support promise.
+Versioning, release admission, security reporting, and contribution details are
+in [the release policy](docs/RELEASING.md), [security policy](SECURITY.md), and
+[contribution guide](CONTRIBUTING.md).
