@@ -11,6 +11,18 @@ OAuth2 provider, application, verified-email enrollment flow,
 inactive-until-verified user creation, dedicated access group, and fail-closed
 application policy binding.
 
+Canonical Go package:
+`github.com/gotthboard/gotth-authentik/pkg/authentik`. The module root
+contains repository governance only; the CLI imports the canonical package.
+
+Repository layout:
+
+- `pkg/authentik/` — public manifest validation and blueprint implementation;
+- `cmd/gotth-authentik/` — bounded render/check CLI;
+- module root — module metadata and repository governance;
+- `integration/`, `examples/`, `docs/`, and `workflow/` — disposable provider
+  evidence, provenance, contracts, and canonical workflow state.
+
 It is not a daemon and does not silently apply remote changes. Rendering and
 inspection are local; a future remote apply command must remain an explicit
 operator action.

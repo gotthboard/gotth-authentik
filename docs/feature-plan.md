@@ -9,3 +9,6 @@
    two imports into disposable Authentik 2026.5.2.
 7. Run clean-clone, repeated race, and code-graph admission gates before any
    consumer pins the project.
+8. Complete alpha.3 coding-setup admission: canonical package layout,
+   requirement/runtime/performance records, clean clone, and two clean Judge
+   passes.

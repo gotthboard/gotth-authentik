@@ -1,5 +1,10 @@
 # Implementation specification
 
+- Canonical package:
+  `github.com/gotthboard/gotth-authentik/pkg/authentik`.
+- The module root contains no Go package; the CLI depends only on the canonical
+  public package.
+
 - One manifest per application.
 - Slugs, access groups, and user-path segments are bounded lowercase slugs.
 - Display strings are valid bounded UTF-8 without control characters.

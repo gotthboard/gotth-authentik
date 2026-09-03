@@ -1,6 +1,9 @@
 # Architecture
 
-The root library validates one small JSON-compatible application/provider model
+The canonical public implementation lives in `pkg/authentik`; the module root
+contains no Go package and the CLI imports the canonical package directly.
+
+The public library validates one small JSON-compatible application/provider model
 and renders one complete Authentik blueprint deterministically. The provider is
 an OAuth2/OIDC authorization-code provider with exact redirect URI matching and
 the built-in `openid`, `profile`, and `email` mappings. Authentik creates the
