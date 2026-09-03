@@ -2,8 +2,8 @@
 
 ## Supported versions
 
-Unreleased Go library and CLI. No version currently carries a
-separate long-term security-support promise. Once releases exist, supported
+Unreleased Go library and CLI. No version currently carries a separate
+long-term security-support promise. Once releases exist, supported
 versions will be listed here and in the changelog.
 
 ## Reporting a vulnerability
