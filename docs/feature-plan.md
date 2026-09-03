@@ -4,5 +4,8 @@
 2. Define a product-neutral application manifest and validators.
 3. Generate verified-email enrollment and isolated access policy.
 4. Add deterministic render/check CLI behavior and tests.
-5. Add disposable-tenant import verification before the first release consumed
-   by GOTTH Board alpha.3.
+5. Add provider and application desired state without accepting secret input.
+6. Prove creation, object linkage, isolation, and secret preservation through
+   two imports into disposable Authentik 2026.5.2.
+7. Run clean-clone, repeated race, and code-graph admission gates before any
+   consumer pins the project.

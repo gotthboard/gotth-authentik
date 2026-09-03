@@ -1,7 +1,7 @@
 schema_version = 1
 project = "gotth-authentik"
 profile = "strict"
-active = "extraction"
+active = "reusable-v0-admission"
 
 [settings]
 worktree_root = "worktrees"
@@ -56,5 +56,53 @@ command = "make verify"
 required = true
 timeout_seconds = 600
 side_effect = "local_write"
+network = false
+retries = 0
+
+[feature.reusable-v0-admission]
+id = "reusable-v0-admission"
+slug = "reusable-v0-admission"
+name = "Complete reusable Authentik application boundary"
+namespace = "authentik"
+parent = ""
+state = "in_progress"
+risk = "high"
+assurance = "traceable-tests"
+created_at = "2026-09-03T01:55:00Z"
+activated_at = "2026-09-03T01:55:00Z"
+updated_at = "2026-09-03T01:55:00Z"
+completed_at = ""
+folder = "workflow/features/reusable-v0-admission"
+worktree = "/home/linus/.openclaw/workspace/.artifacts/worktrees/gotth-authentik-reusable"
+branch = "feature/reusable-v0-admission"
+scope = ["Create generic OAuth2 provider and application desired state", "Prove idempotent import in disposable Authentik 2026.5.2"]
+non_goals = ["Change a live Authentik tenant", "Accept or emit client secrets", "Manage shared tenant flows or signing keys", "Tag a release"]
+affected_files = ["README.md", "application.go", "application_test.go", "blueprint.go", "blueprint_test.go", "cmd/**", "docs/**", "examples/**", "integration/**", "workflow.toml", "workflow/**", "Makefile"]
+invariants = ["Each application has an isolated provider, client ID, and access group", "Activation requires successful email verification", "Generated desired state contains no secret", "Remote mutation remains explicit"]
+acceptance = ["Provider, application, enrollment, and access objects import into Authentik 2026.5.2", "Re-import preserves the generated confidential client secret", "Format, vet, race, clean-clone, coverage, and graph gates pass"]
+
+[feature.reusable-v0-admission.rollback]
+strategy = "revert_commit"
+notes = "Delete the feature branch or revert its commits; disposable tenant state is destroyed after verification"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature.reusable-v0-admission.verification]]
+id = "verify"
+kind = "unit"
+command = "make verify"
+required = true
+timeout_seconds = 600
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature.reusable-v0-admission.verification]]
+id = "authentik-import"
+kind = "integration"
+command = "integration/verify-authentik-2026.5.2.sh"
+required = true
+timeout_seconds = 1200
+side_effect = "external_write"
 network = false
 retries = 0
