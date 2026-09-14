@@ -60,7 +60,9 @@ go get github.com/gotthboard/gotth-authentik@main
 go install github.com/gotthboard/gotth-authentik/cmd/gotth-authentik@main
 ```
 
-The repository has no selected license and no long-term support promise.
-Versioning, release admission, security reporting, and contribution details are
-in [the release policy](docs/RELEASING.md), [security policy](SECURITY.md), and
+The owner-authored repository contents are licensed under the
+[MIT License](LICENSE). Third-party dependencies and assets retain their own
+licenses. No long-term support promise is implied. Versioning, release
+admission, security reporting, and contribution details are in
+[the release policy](docs/RELEASING.md), [security policy](SECURITY.md), and
 [contribution guide](CONTRIBUTING.md).
