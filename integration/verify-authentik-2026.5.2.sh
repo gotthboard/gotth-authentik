@@ -48,7 +48,10 @@ wait_for() {
 
 docker_cmd image inspect "$authentik_image" >/dev/null
 docker_cmd image inspect "$postgres_image" >/dev/null
-go run ./cmd/gotth-authentik render integration/fixture-manifest.json >"$scratch/blueprint.yaml"
+go run ./integration/render-deployment.go >"$scratch/blueprint.yaml"
+printf '%s' 'disposable-oidc-client-secret' >"$scratch/oidc-client-secret"
+printf '%s' 'disposable-scim-token' >"$scratch/scim-token"
+chmod 444 "$scratch/oidc-client-secret" "$scratch/scim-token"
 
 docker_cmd network create --internal "$network_name" >/dev/null
 docker_cmd run -d --name "$postgres_name" --network "$network_name" \
@@ -66,6 +69,8 @@ done
 
 docker_cmd run -d --name "$server_name" --network "$network_name" \
 	-v "$scratch/blueprint.yaml:/test/blueprint.yaml:ro" \
+	-v "$scratch/oidc-client-secret:/run/secrets/integration-oidc-client-secret:ro" \
+	-v "$scratch/scim-token:/run/secrets/integration-scim-token:ro" \
 	-e AUTHENTIK_SECRET_KEY=disposable-only-secret-key-at-least-fifty-characters-1234567890 \
 	-e POSTGRES_PASSWORD=disposable-password \
 	-e AUTHENTIK_POSTGRESQL__HOST="$postgres_name" \
@@ -74,6 +79,8 @@ docker_cmd run -d --name "$server_name" --network "$network_name" \
 wait_for "$server_name" 'from django.db import connection; connection.ensure_connection()' 240
 
 docker_cmd run -d --name "$worker_name" --network "$network_name" \
+	-v "$scratch/oidc-client-secret:/run/secrets/integration-oidc-client-secret:ro" \
+	-v "$scratch/scim-token:/run/secrets/integration-scim-token:ro" \
 	-e AUTHENTIK_SECRET_KEY=disposable-only-secret-key-at-least-fifty-characters-1234567890 \
 	-e POSTGRES_PASSWORD=disposable-password \
 	-e AUTHENTIK_POSTGRESQL__HOST="$postgres_name" \
@@ -87,6 +94,7 @@ from authentik.blueprints.v1.importer import Importer
 from authentik.core.models import Application, Group
 from authentik.policies.models import PolicyBinding
 from authentik.providers.oauth2.models import OAuth2Provider
+from authentik.providers.scim.models import SCIMProvider
 
 raw = Path("/test/blueprint.yaml").read_text()
 first = Importer.from_string(raw)
@@ -95,7 +103,7 @@ assert valid, logs
 assert first.apply()
 
 provider = OAuth2Provider.objects.get(name="integration-example-oidc")
-assert provider.client_secret
+assert provider.client_secret == "disposable-oidc-client-secret"
 secret = provider.client_secret
 assert provider.client_type == "confidential"
 assert provider.client_id == "integration-example"
@@ -108,6 +116,18 @@ group = Group.objects.get(name="integration-example-users")
 binding = PolicyBinding.objects.get(target=application, group=group)
 assert binding.enabled and not binding.negate and not binding.failure_result
 
+scim = SCIMProvider.objects.get(name="Integration Example SCIM")
+assert scim.url == "https://app.example/api/scim/v2/"
+assert scim.token == "disposable-scim-token"
+assert scim.auth_mode == "token"
+assert scim.verify_certificates is True
+assert scim.exclude_users_service_account is True
+assert scim.compatibility_mode == "default"
+assert set(scim.property_mappings.values_list("managed", flat=True)) == {"goauthentik.io/providers/scim/user"}
+assert set(scim.property_mappings_group.values_list("managed", flat=True)) == {"goauthentik.io/providers/scim/group"}
+assert list(scim.group_filters.values_list("name", flat=True)) == ["integration-example-users"]
+assert list(application.backchannel_providers.values_list("pk", flat=True)) == [scim.pk]
+
 second = Importer.from_string(raw)
 valid, logs = second.validate(raise_validation_errors=True)
 assert valid, logs
@@ -115,6 +135,9 @@ assert second.apply()
 provider.refresh_from_db()
 assert provider.client_secret == secret
 assert OAuth2Provider.objects.filter(name="integration-example-oidc").count() == 1
+scim.refresh_from_db()
+assert scim.token == "disposable-scim-token"
+assert SCIMProvider.objects.filter(name="Integration Example SCIM").count() == 1
 assert Application.objects.filter(slug="integration-example").count() == 1
 print("AUTHENTIK_IMPORT_OK")
 ' >"$scratch/import.log" 2>&1; then

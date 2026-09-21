@@ -7,7 +7,7 @@
 
 
 `gotth-authentik` is a versioned desired-state and validation toolkit for
-isolated Authentik OIDC applications. One secret-free manifest generates the
+isolated Authentik OIDC applications. One secret-value-free manifest generates the
 OAuth2 provider, application, verified-email enrollment flow,
 inactive-until-verified user creation, dedicated access group, and fail-closed
 application policy binding.
@@ -29,9 +29,13 @@ inspection are local; a future remote apply command must remain an explicit
 operator action.
 
 Provider client IDs, exact redirect URIs, shared authorization/invalidation
-flow slugs, and the signing-key name are explicit. Confidential client secrets
-are not accepted or rendered; Authentik generates one when the provider is
-first created and preserves it on re-import.
+flow slugs, and the signing-key name are explicit. The enrollment renderer
+does not accept confidential client secrets; Authentik generates one when the
+provider is first created and preserves it on re-import. The additive
+deployment renderer accepts only absolute references beneath `/run/secrets/`.
+Authentik resolves those references through its `!File` tag for an OIDC client
+secret and one token-authenticated SCIM backchannel. The library never reads or
+renders the credential values.
 
 ```text
 gotth-authentik render manifest.json > application.yaml
