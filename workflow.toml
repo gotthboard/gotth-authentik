@@ -1,7 +1,7 @@
 schema_version = 1
 project = "gotth-authentik"
 profile = "strict"
-active = "alpha3-library-admission"
+active = "mail-backchannel"
 
 [settings]
 worktree_root = "worktrees"
@@ -223,5 +223,51 @@ command = "make verify plus disposable Authentik 2026.5.2 double import"
 required = true
 timeout_seconds = 1800
 side_effect = "external_write"
+network = false
+retries = 0
+
+[feature.mail-backchannel]
+id = "mail-backchannel"
+slug = "mail-backchannel"
+name = "Render file-backed OIDC credentials and an SCIM backchannel"
+namespace = "authentik"
+parent = ""
+state = "active"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-21T00:00:00Z"
+activated_at = "2026-09-21T00:00:00Z"
+updated_at = "2026-09-21T00:00:00Z"
+folder = "workflow/features/mail-backchannel"
+source_path = "pkg/authentik"
+worktree = "/tank/development/linus/worktrees/gotth-authentik-mail-backchannel"
+branch = "workflow/feature/gotth-mail-backchannel"
+scope = ["Render an existing confidential OIDC provider client secret through Authentik !File", "Create one token-authenticated SCIM provider with managed user and group mappings", "Attach the SCIM provider as the existing application's backchannel", "Prove exact state and repeat import in disposable Authentik 2026.5.2"]
+non_goals = ["Read, accept, log, compare, or generate secret values", "Apply a blueprint to a live tenant", "Generalize arbitrary Authentik models, mappings, filters, or provider options", "Map SCIM groups to application roles", "Tag or publish a release"]
+affected_files = ["README.md", "pkg/authentik/**", "integration/**", "workflow.toml", "workflow/features/mail-backchannel/**"]
+invariants = ["The existing enrollment renderer and generated-secret behavior remain unchanged", "Credential values remain outside manifests, process arguments, environment variables, rendered artifacts, logs, and evidence", "Credential references are absolute clean paths beneath /run/secrets", "Production endpoints use canonical HTTPS; numeric loopback HTTP exists only for disposable tests", "Only the application's access group is synchronized", "Remote mutation remains an explicit operator action"]
+acceptance = ["PRD, architecture, and implementation specification constrain the code before implementation", "Unit tests cover deterministic output and hostile identifiers, URLs, and secret references", "Existing API tests pass unchanged", "Disposable Authentik 2026.5.2 double import proves exact secret-file resolution, mappings, group filter, backchannel linkage, and idempotence", "Format, vet, race, coverage, clean-clone, and cold review gates pass"]
+
+[[feature.mail-backchannel.dependency]]
+id = "alpha3-library-admission"
+type = "prerequisite"
+state = "satisfied"
+evidence = "workflow/features/alpha3-library-admission/README.md"
+source_commit = "cb87f0ebe27d4f2bc6574bd409fcf4d28b23021a"
+satisfied_at = "2026-09-21T00:00:00Z"
+
+[feature.mail-backchannel.rollback]
+strategy = "revert_unpublished_feature_commits"
+notes = "No live tenant is changed and no release is tagged; revert this feature line"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature.mail-backchannel.verification]]
+id = "verify"
+kind = "unit-integration"
+command = "make verify plus disposable Authentik 2026.5.2 double import with mounted secret files"
+required = true
+timeout_seconds = 1800
+side_effect = "local_write"
 network = false
 retries = 0
