@@ -52,6 +52,11 @@ go run ./integration/render-deployment.go >"$scratch/blueprint.yaml"
 printf '%s' 'disposable-oidc-client-secret' >"$scratch/oidc-client-secret"
 printf '%s' 'disposable-scim-token' >"$scratch/scim-token"
 chmod 444 "$scratch/oidc-client-secret" "$scratch/scim-token"
+if grep -F 'disposable-oidc-client-secret' "$scratch/blueprint.yaml" >/dev/null ||
+	grep -F 'disposable-scim-token' "$scratch/blueprint.yaml" >/dev/null; then
+	echo 'rendered blueprint contains credential values' >&2
+	exit 1
+fi
 
 docker_cmd network create --internal "$network_name" >/dev/null
 docker_cmd run -d --name "$postgres_name" --network "$network_name" \
@@ -90,6 +95,7 @@ wait_for "$server_name" 'from authentik.flows.models import Flow; assert Flow.ob
 
 if ! docker_cmd exec "$server_name" ak shell -c '
 from pathlib import Path
+from authentik.blueprints.v1.common import EntryInvalidError
 from authentik.blueprints.v1.importer import Importer
 from authentik.core.models import Application, Group
 from authentik.policies.models import PolicyBinding
@@ -97,6 +103,20 @@ from authentik.providers.oauth2.models import OAuth2Provider
 from authentik.providers.scim.models import SCIMProvider
 
 raw = Path("/test/blueprint.yaml").read_text()
+missing_raw = raw.replace(
+    "/run/secrets/integration-oidc-client-secret",
+    "/run/secrets/missing-oidc-client-secret",
+)
+assert missing_raw != raw
+missing = Importer.from_string(missing_raw)
+try:
+    missing.validate(raise_validation_errors=True)
+except EntryInvalidError as exc:
+    assert "client_secret" in str(exc)
+else:
+    raise AssertionError("missing OIDC secret file passed importer validation")
+assert not OAuth2Provider.objects.filter(name="integration-example-oidc").exists()
+
 first = Importer.from_string(raw)
 valid, logs = first.validate(raise_validation_errors=True)
 assert valid, logs
