@@ -45,5 +45,5 @@ would pull credentials into the wrong trust boundary.
 
 `RenderEnrollmentBlueprint` and `Application` remain untouched. The additive
 types and function are pre-1.0 API. The generated overlay is pinned to the
-Authen­tik 2026.5 importer contract and must be revalidated before claiming
+Authentik 2026.5 importer contract and must be revalidated before claiming
 compatibility with another Authentik release.

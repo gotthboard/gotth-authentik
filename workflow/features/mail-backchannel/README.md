@@ -12,5 +12,7 @@ nor applies state to an Authentik tenant. The canonical contracts are:
 - [architecture](architecture.md)
 - [implementation specification](implementation-spec.md)
 
-Verification evidence is recorded only after implementation and independent
-review pass.
+Admission records:
+
+- [verification evidence](evidence/verification.md)
+- [cold review](evidence/review.md)
