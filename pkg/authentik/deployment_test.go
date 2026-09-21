@@ -72,6 +72,7 @@ func TestDeploymentValidationRejectsUnsafeState(t *testing.T) {
 		{"SCIM URL credentials", func(value *Deployment) { value.SCIM.URL = "https://user@app.example/scim/" }},
 		{"SCIM URL query", func(value *Deployment) { value.SCIM.URL = "https://app.example/scim/?x=1" }},
 		{"unsafe SCIM token path", func(value *Deployment) { value.SCIM.TokenFile = "/tmp/token" }},
+		{"shared credential path", func(value *Deployment) { value.SCIM.TokenFile = value.OIDCClientSecretFile }},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

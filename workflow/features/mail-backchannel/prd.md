@@ -32,6 +32,7 @@ the application's access group, and attach that provider to the application's
 - The public API accepts file paths, never secret bytes.
 - The renderer never opens or stats credential files.
 - Paths are absolute, clean, non-root paths strictly below `/run/secrets/`.
+- OIDC and SCIM credentials use distinct file references and rotation domains.
 - Production SCIM URLs require HTTPS. Numeric loopback HTTP is accepted only
   to support a disposable integration environment.
 - The existing `RenderEnrollmentBlueprint` API and its generated-secret

@@ -136,9 +136,14 @@ provider.refresh_from_db()
 assert provider.client_secret == secret
 assert OAuth2Provider.objects.filter(name="integration-example-oidc").count() == 1
 scim.refresh_from_db()
+application.refresh_from_db()
 assert scim.token == "disposable-scim-token"
 assert SCIMProvider.objects.filter(name="Integration Example SCIM").count() == 1
 assert Application.objects.filter(slug="integration-example").count() == 1
+assert set(scim.property_mappings.values_list("managed", flat=True)) == {"goauthentik.io/providers/scim/user"}
+assert set(scim.property_mappings_group.values_list("managed", flat=True)) == {"goauthentik.io/providers/scim/group"}
+assert list(scim.group_filters.values_list("name", flat=True)) == ["integration-example-users"]
+assert list(application.backchannel_providers.values_list("pk", flat=True)) == [scim.pk]
 print("AUTHENTIK_IMPORT_OK")
 ' >"$scratch/import.log" 2>&1; then
 	cat "$scratch/import.log" >&2

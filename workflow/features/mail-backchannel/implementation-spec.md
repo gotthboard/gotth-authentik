@@ -23,7 +23,7 @@ func RenderDeploymentBlueprint(Deployment) ([]byte, error)
 ```
 
 `Deployment.Validate` requires a valid application, a confidential OIDC
-provider, two safe credential references, and a valid SCIM backchannel.
+provider, two distinct safe credential references, and a valid SCIM backchannel.
 `SCIMBackchannel.Name` uses bounded control-free display text because
 Authentik's provider identifier is a name rather than a slug.
 

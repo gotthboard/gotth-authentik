@@ -44,6 +44,9 @@ func (deployment Deployment) Validate() error {
 	if err := deployment.SCIM.Validate(); err != nil {
 		return fmt.Errorf("SCIM backchannel: %w", err)
 	}
+	if deployment.OIDCClientSecretFile == deployment.SCIM.TokenFile {
+		return fmt.Errorf("OIDC client secret and SCIM token files must be distinct")
+	}
 	return nil
 }
 
