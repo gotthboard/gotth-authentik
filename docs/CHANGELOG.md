@@ -8,8 +8,8 @@ Released sections use Semantic Versioning; unreleased work remains under
 
 ### 2026-10-24 — Admit the v1 source contract candidate
 
-Base commit: `77c811c18fe3c107f6f3e97ce3f9a3850a685300`. Candidate commit is
-assigned by Git after verification and review.
+Base commit: `77c811c18fe3c107f6f3e97ce3f9a3850a685300`. Reviewed source
+candidate: `e48e1e696ed85003f08416989f5712e70898829a`.
 
 Changes:
 

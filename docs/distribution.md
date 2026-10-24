@@ -17,7 +17,7 @@ endpoints.
 
 ## Maturity and compatibility
 
-Current status: local v1 release candidate pending final admission; no v1 tag or hosted Release.
+Current status: admitted local v1 release candidate; no v1 tag or hosted Release.
 
 ## Current source use
 

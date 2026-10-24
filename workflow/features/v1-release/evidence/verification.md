@@ -4,8 +4,8 @@ Date: 2026-10-24
 
 ## Exact source boundary
 
-- canonical base and worktree HEAD before the local release commit:
-  77c811c18fe3c107f6f3e97ce3f9a3850a685300
+- canonical base: 77c811c18fe3c107f6f3e97ce3f9a3850a685300
+- reviewed source candidate: e48e1e696ed85003f08416989f5712e70898829a
 - branch: workflow/feature/v1-release
 - worktree:
   /home/linus/.openclaw/workspace/.artifacts/worktrees/gotth-authentik-v1-release

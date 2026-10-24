@@ -1,8 +1,7 @@
 # Version 1 contract
 
-This document freezes the source contract intended for the first v1 release.
-The implementation is a release candidate pending final admission; no tag,
-hosted Release, or deployment is created by this work.
+This document freezes the admitted source contract intended for the first v1
+release. No tag, hosted Release, or deployment is created by this work.
 
 ## Supported runtime
 
