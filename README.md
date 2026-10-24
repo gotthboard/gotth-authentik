@@ -51,12 +51,10 @@ admitted by the Authentik 2026.5.2 importer.
 
 ## Installation, compatibility, and support
 
-The source contract is admitted as a v1 release candidate. It remains
-unpublished, with no v1 tag or hosted Release. The stable API, manifest, CLI,
-runtime, and support surface is in [the v1 contract](docs/v1-contract.md).
-
-Before the first tag, consumers must use an exact reviewed commit rather than a
-moving branch. From a pinned checkout, install the CLI with:
+`v1.0.0` is the stable Forgejo release of the confidential-client toolkit for
+Authentik 2026.5.2. The stable API, manifest, CLI, runtime, and support surface
+is in [the v1 contract](docs/v1-contract.md). GitHub hosted-release publication
+remains Bryce's separate distribution handoff. Install the CLI with:
 
 ```sh
 go install ./cmd/gotth-authentik

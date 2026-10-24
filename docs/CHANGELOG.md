@@ -4,12 +4,9 @@ This repository records user-visible and compatibility-relevant changes here.
 Released sections use Semantic Versioning; unreleased work remains under
 `Unreleased` and does not imply a tag.
 
-## Unreleased
+## v1.0.0 — 2026-10-24
 
-### 2026-10-24 — Admit the v1 source contract candidate
-
-Base commit: `77c811c18fe3c107f6f3e97ce3f9a3850a685300`. Reviewed source
-candidate: `e48e1e696ed85003f08416989f5712e70898829a`.
+Stable release of the confidential-client blueprint toolkit and render/check CLI for Authentik 2026.5.2. The immutable annotated tag and Forgejo Release record the exact peeled release commit.
 
 Changes:
 
@@ -28,8 +25,7 @@ Compatibility:
 - `public` client manifests are rejected; they were never admitted by the pinned
   runtime evidence;
 - renderer output for admitted confidential manifests is unchanged;
-- no daemon, remote apply, newer Authentik support, live mutation, tag, hosted
-  Release, publication, or deployment is added.
+- no daemon, remote apply, newer Authentik support, live tenant mutation, or deployment is added; GitHub hosted-release publication remains Bryce's separate handoff.
 
 ### 2026-09-13 19:05 CDT — Adopt the MIT license
 

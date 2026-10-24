@@ -17,27 +17,22 @@ endpoints.
 
 ## Maturity and compatibility
 
-Current status: admitted local v1 release candidate; no v1 tag or hosted Release.
+Current status: stable v1.0.0 on canonical Forgejo. GitHub hosted-release publication is pending Bryce.
 
 ## Current source use
 
-No post-migration version has been tagged. Until publication, source users must
-select an exact reviewed commit; the moving `main` branch is not a compatibility
-promise:
+Consumers should select the immutable v1.0.0 module tag rather than a moving branch:
 
 ```sh
-go get github.com/gotthboard/gotth-authentik/pkg/authentik@<reviewed-commit>
-go install github.com/gotthboard/gotth-authentik/cmd/gotth-authentik@<reviewed-commit>
+go get github.com/gotthboard/gotth-authentik/pkg/authentik@v1.0.0
+go install github.com/gotthboard/gotth-authentik/cmd/gotth-authentik@v1.0.0
 ```
 
 ```go
 import authentik "github.com/gotthboard/gotth-authentik/pkg/authentik"
 ```
 
-A Go command records a pseudo-version in the consumer's `go.mod`; review that
-exact revision. The intended v1 stability and support boundary is in
-`docs/v1-contract.md` and begins as a published contract only when a v1 tag
-exists.
+The v1 stability and support boundary is in `docs/v1-contract.md`. Preserve the exact tag and checksum evidence in consumer admission records.
 
 The repository pins Go 1.26.6 where a Go module exists. Supported protocol,
 runtime, database, and tool versions remain the ones stated in the README and

@@ -2,10 +2,8 @@
 
 ## Supported versions
 
-No version has been published, so no released line currently carries a
-security-support promise. After a v1 release exists, only the latest v1 patch is
-supported; superseded patches and Authentik versions other than 2026.5.2 are
-outside the support contract. See `docs/v1-contract.md`.
+Only the latest published v1 patch is supported. Superseded patches and
+Authentik versions other than 2026.5.2 are outside the support contract. See `docs/v1-contract.md`.
 
 ## Reporting a vulnerability
 
