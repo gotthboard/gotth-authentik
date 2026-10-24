@@ -8,7 +8,8 @@ Reviewed artifact:
 - SHA-256: 8b60022d06315f3e8348654c15c588a451bd67f37e8cbc3cddd44b7a125b1444
 - runtime-input digest:
   99f199e21249790c5cc16ab7df61b68d5851c8d39a60a561afec056239736a06
-- v1 contract SHA-256:
+- v1 contract at reviewed source candidate
+  `e48e1e696ed85003f08416989f5712e70898829a`, SHA-256:
   2a871fb5f14294b84d44e47961499d628fb439235e4e965074fabbd779bdd6ab
 - validApplication source/test SHA-256:
   ff1aff9f0247ff72d36b3e1a387caf6a4ec3fb736e7801b591d88c1c8dff7b7c
