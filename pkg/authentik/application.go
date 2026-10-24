@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -59,7 +60,10 @@ func (application Application) Validate() error {
 		}
 	}
 	if application.LaunchURL != "" {
-		if _, err := validateSecureURL(application.LaunchURL); err != nil {
+		if len(application.LaunchURL) > 2048 {
+			return fmt.Errorf("launch URL is too long")
+		}
+		if _, err := validateRedirectURL(application.LaunchURL); err != nil {
 			return fmt.Errorf("launch URL is invalid: %w", err)
 		}
 	}
@@ -75,8 +79,8 @@ func (provider Provider) Validate() error {
 	if !validText(provider.Name, 1, 255) {
 		return fmt.Errorf("name is invalid")
 	}
-	if provider.ClientType != "confidential" && provider.ClientType != "public" {
-		return fmt.Errorf("client type must be confidential or public")
+	if provider.ClientType != "confidential" {
+		return fmt.Errorf("client type must be confidential")
 	}
 	if !validText(provider.ClientID, 1, 255) {
 		return fmt.Errorf("client ID is invalid")
@@ -95,7 +99,7 @@ func (provider Provider) Validate() error {
 		if len(raw) > 2048 {
 			return fmt.Errorf("redirect URI %d is too long", index)
 		}
-		if _, err := validateSecureURL(raw); err != nil {
+		if _, err := validateRedirectURL(raw); err != nil {
 			return fmt.Errorf("redirect URI %d is invalid: %w", index, err)
 		}
 		if _, exists := seen[raw]; exists {
@@ -120,12 +124,17 @@ func validText(value string, minimum, maximum int) bool {
 
 // ValidateIssuerURL accepts one exact canonical Authentik OIDC issuer URL.
 func ValidateIssuerURL(raw string) error {
-	parsed, err := validateSecureURL(raw)
+	parsed, err := validateHTTPSURL(raw)
 	if err != nil {
 		return fmt.Errorf("invalid Authentik issuer: %w", err)
 	}
-	if parsed.Path == "/" || !strings.HasSuffix(parsed.Path, "/") {
-		return fmt.Errorf("invalid Authentik issuer: path must identify a provider and end with a slash")
+	const prefix = "/application/o/"
+	if parsed.RawPath != "" || !strings.HasPrefix(parsed.Path, prefix) || !strings.HasSuffix(parsed.Path, "/") {
+		return fmt.Errorf("invalid Authentik issuer: path must be /application/o/<application-slug>/")
+	}
+	slug := strings.TrimSuffix(strings.TrimPrefix(parsed.Path, prefix), "/")
+	if !validSlug(slug) || parsed.Path != prefix+slug+"/" {
+		return fmt.Errorf("invalid Authentik issuer: path must be /application/o/<application-slug>/")
 	}
 	return nil
 }
@@ -136,16 +145,16 @@ func ValidateEnrollmentURL(raw, expectedOrigin, flowSlug string) error {
 	if !validSlug(flowSlug) {
 		return fmt.Errorf("invalid enrollment flow slug")
 	}
-	parsed, err := validateSecureURL(raw)
+	parsed, err := validateHTTPSURL(raw)
 	if err != nil {
 		return fmt.Errorf("invalid Authentik enrollment URL: %w", err)
 	}
-	origin, err := validateSecureURL(expectedOrigin)
-	if err != nil || origin.Path != "/" {
+	origin, err := validateHTTPSURL(expectedOrigin)
+	if err != nil || origin.Path != "/" || origin.RawPath != "" {
 		return fmt.Errorf("invalid expected Authentik origin")
 	}
 	wantPath := "/if/flow/" + flowSlug + "/"
-	if parsed.Scheme != origin.Scheme || parsed.Host != origin.Host || parsed.Path != wantPath {
+	if parsed.RawPath != "" || parsed.Scheme != origin.Scheme || parsed.Host != origin.Host || parsed.Path != wantPath {
 		return fmt.Errorf("Authentik enrollment URL does not match the expected origin and flow")
 	}
 	return nil
@@ -162,10 +171,90 @@ func validateCanonicalURL(raw string) (*url.URL, error) {
 	if parsed.User != nil || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" || parsed.String() != raw {
 		return nil, fmt.Errorf("URL contains credentials, query, fragment, or noncanonical encoding")
 	}
+	if parsed.RawPath != "" || strings.Contains(parsed.Path, "//") || strings.Contains(parsed.Path, "\\") {
+		return nil, fmt.Errorf("URL path is not canonical")
+	}
+	for _, segment := range strings.Split(parsed.Path, "/") {
+		if segment == "." || segment == ".." {
+			return nil, fmt.Errorf("URL path contains a dot segment")
+		}
+	}
+	hostname := parsed.Hostname()
+	if strings.HasSuffix(parsed.Host, ":") || strings.HasSuffix(hostname, ".") || strings.Contains(hostname, "%") {
+		return nil, fmt.Errorf("URL authority is not canonical")
+	}
+	if port := parsed.Port(); port != "" {
+		number, conversionErr := strconv.Atoi(port)
+		if conversionErr != nil || number < 1 || number > 65535 || strconv.Itoa(number) != port {
+			return nil, fmt.Errorf("URL port is not canonical")
+		}
+		if (parsed.Scheme == "https" && port == "443") || (parsed.Scheme == "http" && port == "80") {
+			return nil, fmt.Errorf("URL authority contains a default port")
+		}
+	}
+	if host := net.ParseIP(hostname); host != nil {
+		if hostname != host.String() {
+			return nil, fmt.Errorf("IP address is not canonical")
+		}
+	} else {
+		if strings.Contains(hostname, ":") || numericLikeHostname(hostname) || !validDNSHostname(hostname) {
+			return nil, fmt.Errorf("DNS name is not canonical")
+		}
+	}
 	return parsed, nil
 }
 
-func validateSecureURL(raw string) (*url.URL, error) {
+func numericLikeHostname(hostname string) bool {
+	labels := strings.Split(hostname, ".")
+	label := labels[len(labels)-1]
+	if strings.HasPrefix(label, "0x") {
+		if len(label) == 2 {
+			return true
+		}
+		for _, character := range label[2:] {
+			if (character < '0' || character > '9') && (character < 'a' || character > 'f') {
+				return false
+			}
+		}
+		return true
+	}
+	for _, character := range label {
+		if character < '0' || character > '9' {
+			return false
+		}
+	}
+	return label != ""
+}
+
+func validDNSHostname(hostname string) bool {
+	if hostname != strings.ToLower(hostname) || len(hostname) > 253 {
+		return false
+	}
+	for _, label := range strings.Split(hostname, ".") {
+		if len(label) == 0 || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return false
+		}
+		for _, character := range label {
+			if (character < 'a' || character > 'z') && (character < '0' || character > '9') && character != '-' {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func validateHTTPSURL(raw string) (*url.URL, error) {
+	parsed, err := validateCanonicalURL(raw)
+	if err != nil {
+		return nil, err
+	}
+	if parsed.Scheme != "https" {
+		return nil, fmt.Errorf("URL must use HTTPS")
+	}
+	return parsed, nil
+}
+
+func validateRedirectURL(raw string) (*url.URL, error) {
 	parsed, err := validateCanonicalURL(raw)
 	if err != nil {
 		return nil, err

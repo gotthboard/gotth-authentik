@@ -10,7 +10,10 @@ import (
 	"github.com/gotthboard/gotth-authentik/pkg/authentik"
 )
 
-const maxManifestBytes = 1 << 20
+const (
+	maxManifestBytes  = 1 << 20
+	maxBlueprintBytes = 1 << 20
+)
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout); err != nil {
@@ -38,9 +41,9 @@ func run(arguments []string, output io.Writer) error {
 		_, err = output.Write(blueprint)
 		return err
 	}
-	current, err := os.ReadFile(arguments[2])
+	current, err := readBoundedFile(arguments[2], maxBlueprintBytes, "blueprint")
 	if err != nil {
-		return fmt.Errorf("read blueprint: %w", err)
+		return err
 	}
 	if !bytes.Equal(current, blueprint) {
 		return fmt.Errorf("blueprint differs from generated desired state")
@@ -49,17 +52,9 @@ func run(arguments []string, output io.Writer) error {
 }
 
 func readManifest(path string) (authentik.Application, error) {
-	file, err := os.Open(path)
+	raw, err := readBoundedFile(path, maxManifestBytes, "manifest")
 	if err != nil {
-		return authentik.Application{}, fmt.Errorf("read manifest: %w", err)
-	}
-	defer file.Close()
-	raw, err := io.ReadAll(io.LimitReader(file, maxManifestBytes+1))
-	if err != nil {
-		return authentik.Application{}, fmt.Errorf("read manifest: %w", err)
-	}
-	if len(raw) > maxManifestBytes {
-		return authentik.Application{}, fmt.Errorf("manifest exceeds 1 MiB")
+		return authentik.Application{}, err
 	}
 	var application authentik.Application
 	decoder := json.NewDecoder(bytes.NewReader(raw))
@@ -71,4 +66,20 @@ func readManifest(path string) (authentik.Application, error) {
 		return authentik.Application{}, fmt.Errorf("decode manifest: trailing data")
 	}
 	return application, nil
+}
+
+func readBoundedFile(path string, maximum int64, kind string) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", kind, err)
+	}
+	defer file.Close()
+	raw, err := io.ReadAll(io.LimitReader(file, maximum+1))
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", kind, err)
+	}
+	if int64(len(raw)) > maximum {
+		return nil, fmt.Errorf("%s exceeds 1 MiB", kind)
+	}
+	return raw, nil
 }

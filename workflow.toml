@@ -1,7 +1,7 @@
 schema_version = 1
 project = "gotth-authentik"
 profile = "strict"
-active = "alpha3-library-admission"
+active = "v1-release"
 
 [settings]
 worktree_root = "worktrees"
@@ -222,6 +222,53 @@ kind = "unit-integration"
 command = "make verify plus disposable Authentik 2026.5.2 double import"
 required = true
 timeout_seconds = 1800
+side_effect = "external_write"
+network = false
+retries = 0
+
+[feature.v1-release]
+id = "v1-release"
+slug = "v1-release"
+name = "Admit the Authentik 2026.5.2 v1 source contract"
+namespace = "authentik"
+parent = ""
+state = "in_progress"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-10-24T13:38:00Z"
+activated_at = "2026-10-24T13:38:00Z"
+updated_at = "2026-10-24T13:38:00Z"
+folder = "workflow/features/v1-release"
+worktree = "/home/linus/.openclaw/workspace/.artifacts/worktrees/gotth-authentik-v1-release"
+branch = "workflow/feature/v1-release"
+scope = ["Freeze the confidential-client API, manifest, CLI, and support contract", "Prove complete isolated double import against Authentik 2026.5.2", "Admit revision-matched consumer evidence without changing consumers"]
+non_goals = ["Support public clients", "Support another Authentik version", "Apply to a live Authentik tenant", "Add a daemon or remote apply", "Push, tag, publish, or deploy"]
+affected_files = ["pkg/authentik/**", "cmd/**", "integration/**", "examples/**", "README.md", "CONTRIBUTING.md", "SECURITY.md", "docs/**", "workflow.toml", "workflow.events.jsonl", "workflow/features/v1-release/**", "Makefile"]
+invariants = ["Desired state contains no secret", "Each application has isolated provider, client ID, group, flow, stages, and policy", "Remote mutation remains absent", "Only Authentik 2026.5.2 is claimed"]
+acceptance = ["Pinned local Go gates and independent golden pass", "Disposable Authentik 2026.5.2 imports two applications twice with complete state assertions and cleanup", "Revision-compatible Mail evidence and honest Board/WorldWeave fixture limits are recorded", "Two fresh independent reviews are clean"]
+
+[feature.v1-release.rollback]
+strategy = "revert_unpublished_candidate_commits"
+notes = "No tag, push, publication, deployment, live tenant, or consumer mutation is part of this feature"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature.v1-release.verification]]
+id = "local"
+kind = "unit"
+command = "GOTOOLCHAIN=go1.26.6 make verify"
+required = true
+timeout_seconds = 600
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature.v1-release.verification]]
+id = "authentik-2026.5.2"
+kind = "integration-development"
+command = "env DOCKER_SUDO=1 integration/verify-authentik-2026.5.2.sh"
+required = true
+timeout_seconds = 1200
 side_effect = "external_write"
 network = false
 retries = 0

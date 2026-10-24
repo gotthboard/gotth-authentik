@@ -6,6 +6,31 @@ Released sections use Semantic Versioning; unreleased work remains under
 
 ## Unreleased
 
+### 2026-10-24 — Admit the v1 source contract candidate
+
+Base commit: `77c811c18fe3c107f6f3e97ce3f9a3850a685300`. Candidate commit is
+assigned by Git after verification and review.
+
+Changes:
+
+- freeze the Go API, JSON manifest, render/check CLI, compatibility, and support
+  boundary for confidential clients on Authentik 2026.5.2;
+- enforce the exact `/application/o/<application-slug>/` issuer shape and
+  bound both CLI input files to 1 MiB;
+- compare rendering with an independent complete golden blueprint;
+- expand the disposable importer oracle to two isolated applications and exact
+  provider, flow, stage, linkage, nonduplication, and generated-secret checks;
+- record exact Mail evidence, retain Board provenance, and add an explicitly
+  non-deployment WorldWeave fixture for missing profile proof.
+
+Compatibility:
+
+- `public` client manifests are rejected; they were never admitted by the pinned
+  runtime evidence;
+- renderer output for admitted confidential manifests is unchanged;
+- no daemon, remote apply, newer Authentik support, live mutation, tag, hosted
+  Release, publication, or deployment is added.
+
 ### 2026-09-13 19:05 CDT — Adopt the MIT license
 
 Commit: current commit; hash assigned by Git after commit

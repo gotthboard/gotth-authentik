@@ -17,24 +17,27 @@ endpoints.
 
 ## Maturity and compatibility
 
-Current status: unreleased Go library and CLI.
+Current status: local v1 release candidate pending final admission; no v1 tag or hosted Release.
 
 ## Current source use
 
-No post-migration version has been tagged. Until one is admitted, source users
-must select the moving `main` branch explicitly:
+No post-migration version has been tagged. Until publication, source users must
+select an exact reviewed commit; the moving `main` branch is not a compatibility
+promise:
 
 ```sh
-go get github.com/gotthboard/gotth-authentik@main
-go install github.com/gotthboard/gotth-authentik/cmd/gotth-authentik@main
+go get github.com/gotthboard/gotth-authentik/pkg/authentik@<reviewed-commit>
+go install github.com/gotthboard/gotth-authentik/cmd/gotth-authentik@<reviewed-commit>
 ```
 
 ```go
-import authentik "github.com/gotthboard/gotth-authentik"
+import authentik "github.com/gotthboard/gotth-authentik/pkg/authentik"
 ```
 
 A Go command records a pseudo-version in the consumer's `go.mod`; review that
-exact revision. Do not mistake `@main` for a compatibility promise.
+exact revision. The intended v1 stability and support boundary is in
+`docs/v1-contract.md` and begins as a published contract only when a v1 tag
+exists.
 
 The repository pins Go 1.26.6 where a Go module exists. Supported protocol,
 runtime, database, and tool versions remain the ones stated in the README and

@@ -2,6 +2,7 @@ package authentik
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 )
@@ -14,6 +15,13 @@ func TestRenderEnrollmentBlueprintContainsFailClosedContract(t *testing.T) {
 	second, err := RenderEnrollmentBlueprint(validApplication())
 	if err != nil || !bytes.Equal(first, second) {
 		t.Fatal("blueprint rendering is not deterministic")
+	}
+	golden, err := os.ReadFile("testdata/example-blueprint.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(first, golden) {
+		t.Fatalf("rendered blueprint differs from independently reviewed golden structure: got %d bytes, want %d", len(first), len(golden))
 	}
 	for _, required := range []string{
 		"authentik_providers_oauth2.oauth2provider", "authentik_core.application",

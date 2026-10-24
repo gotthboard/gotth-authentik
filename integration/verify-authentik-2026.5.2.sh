@@ -1,15 +1,30 @@
 #!/bin/sh
 set -eu
 
-authentik_image=${AUTHENTIK_TEST_IMAGE:-ghcr.io/goauthentik/server@sha256:3ddf09bbf69ded6a9634ecd753a01608d477f811e99bb5ffe9fc2ef7ad1c6581}
-postgres_image=${AUTHENTIK_TEST_POSTGRES_IMAGE:-postgres@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777}
+if [ "$#" -ne 0 ]; then
+	printf '%s\n' 'usage: verify-authentik-2026.5.2.sh' >&2
+	exit 2
+fi
+GOTOOLCHAIN=go1.26.6
+export GOTOOLCHAIN
+version=$(go env GOVERSION)
+[ "${version%%-*}" = go1.26.6 ] || {
+	printf 'required Go 1.26.6, got %s\n' "$version" >&2
+	exit 1
+}
+
+authentik_digest=sha256:3ddf09bbf69ded6a9634ecd753a01608d477f811e99bb5ffe9fc2ef7ad1c6581
+postgres_digest=sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+authentik_image=ghcr.io/goauthentik/server:2026.5.2@$authentik_digest
+postgres_image=postgres:16@$postgres_digest
 docker_bin=${DOCKER_BIN:-docker}
 case_id="gotth-authentik-it-$$"
 network_name="$case_id-net"
+volume_name="$case_id-postgres-data"
 postgres_name="$case_id-postgres"
 server_name="$case_id-server"
 worker_name="$case_id-worker"
-scratch=$(mktemp -d)
+scratch=
 
 docker_cmd() {
 	if [ "${DOCKER_SUDO:-0}" = 1 ]; then
@@ -19,12 +34,36 @@ docker_cmd() {
 	fi
 }
 
-cleanup() {
+cleanup_best_effort() {
 	docker_cmd rm -f "$worker_name" "$server_name" "$postgres_name" >/dev/null 2>&1 || true
 	docker_cmd network rm "$network_name" >/dev/null 2>&1 || true
-	rm -rf "$scratch"
+	docker_cmd volume rm "$volume_name" >/dev/null 2>&1 || true
+	if [ -n "$scratch" ]; then
+		rm -rf "$scratch"
+	fi
 }
-trap cleanup EXIT HUP INT TERM
+
+cleanup_checked() {
+	docker_cmd rm -f "$worker_name" "$server_name" "$postgres_name" >/dev/null
+	docker_cmd network rm "$network_name" >/dev/null
+	docker_cmd volume rm "$volume_name" >/dev/null
+	rm -rf "$scratch"
+	for container in "$worker_name" "$server_name" "$postgres_name"; do
+		if docker_cmd inspect "$container" >/dev/null 2>&1; then
+			return 1
+		fi
+	done
+	if docker_cmd network inspect "$network_name" >/dev/null 2>&1; then
+		return 1
+	fi
+	if docker_cmd volume inspect "$volume_name" >/dev/null 2>&1; then
+		return 1
+	fi
+	[ ! -e "$scratch" ]
+}
+trap cleanup_best_effort EXIT
+trap 'exit 1' HUP INT TERM
+scratch=$(mktemp -d)
 
 fail_with_logs() {
 	docker_cmd logs --tail 160 "$server_name" >&2 2>/dev/null || true
@@ -46,12 +85,21 @@ wait_for() {
 	done
 }
 
-docker_cmd image inspect "$authentik_image" >/dev/null
-docker_cmd image inspect "$postgres_image" >/dev/null
-go run ./cmd/gotth-authentik render integration/fixture-manifest.json >"$scratch/blueprint.yaml"
+docker_cmd image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$authentik_image" |
+	grep -Fx "ghcr.io/goauthentik/server@$authentik_digest" >/dev/null
+docker_cmd image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$postgres_image" |
+	grep -Fx "postgres@$postgres_digest" >/dev/null
+go run ./cmd/gotth-authentik render integration/fixture-manifest.json >"$scratch/primary.yaml"
+go run ./cmd/gotth-authentik render integration/fixture-sibling-manifest.json >"$scratch/sibling.yaml"
+go run ./cmd/gotth-authentik check integration/fixture-manifest.json "$scratch/primary.yaml"
+go run ./cmd/gotth-authentik check integration/fixture-sibling-manifest.json "$scratch/sibling.yaml"
+chmod 0755 "$scratch"
+chmod 0644 "$scratch/primary.yaml" "$scratch/sibling.yaml"
 
 docker_cmd network create --internal "$network_name" >/dev/null
+docker_cmd volume create "$volume_name" >/dev/null
 docker_cmd run -d --name "$postgres_name" --network "$network_name" \
+	-v "$volume_name:/var/lib/postgresql/data" \
 	-e POSTGRES_DB=authentik -e POSTGRES_USER=authentik \
 	-e POSTGRES_PASSWORD=disposable-password "$postgres_image" >/dev/null
 
@@ -65,7 +113,7 @@ until docker_cmd exec "$postgres_name" pg_isready -U authentik -d authentik >/de
 done
 
 docker_cmd run -d --name "$server_name" --network "$network_name" \
-	-v "$scratch/blueprint.yaml:/test/blueprint.yaml:ro" \
+	-v "$scratch:/test:ro" \
 	-e AUTHENTIK_SECRET_KEY=disposable-only-secret-key-at-least-fifty-characters-1234567890 \
 	-e POSTGRES_PASSWORD=disposable-password \
 	-e AUTHENTIK_POSTGRESQL__HOST="$postgres_name" \
@@ -79,46 +127,14 @@ docker_cmd run -d --name "$worker_name" --network "$network_name" \
 	-e AUTHENTIK_POSTGRESQL__HOST="$postgres_name" \
 	"$authentik_image" worker >/dev/null
 
-wait_for "$server_name" 'from authentik.flows.models import Flow; assert Flow.objects.filter(slug="default-provider-authorization-implicit-consent").exists(); from authentik.crypto.models import CertificateKeyPair; assert CertificateKeyPair.objects.filter(name="authentik Self-signed Certificate").exists()' 180
+wait_for "$server_name" 'from authentik.flows.models import Flow; required_flows={"default-provider-authorization-implicit-consent", "default-provider-invalidation-flow"}; assert set(Flow.objects.filter(slug__in=required_flows).values_list("slug", flat=True)) == required_flows; from authentik.crypto.models import CertificateKeyPair; assert CertificateKeyPair.objects.filter(name="authentik Self-signed Certificate").exists(); from authentik.providers.oauth2.models import ScopeMapping; required={"goauthentik.io/providers/oauth2/scope-openid", "goauthentik.io/providers/oauth2/scope-profile", "goauthentik.io/providers/oauth2/scope-email"}; assert set(ScopeMapping.objects.filter(managed__in=required).values_list("managed", flat=True)) == required' 180
 
-if ! docker_cmd exec "$server_name" ak shell -c '
-from pathlib import Path
-from authentik.blueprints.v1.importer import Importer
-from authentik.core.models import Application, Group
-from authentik.policies.models import PolicyBinding
-from authentik.providers.oauth2.models import OAuth2Provider
-
-raw = Path("/test/blueprint.yaml").read_text()
-first = Importer.from_string(raw)
-valid, logs = first.validate(raise_validation_errors=True)
-assert valid, logs
-assert first.apply()
-
-provider = OAuth2Provider.objects.get(name="integration-example-oidc")
-assert provider.client_secret
-secret = provider.client_secret
-assert provider.client_type == "confidential"
-assert provider.client_id == "integration-example"
-assert len(provider.redirect_uris) == 1
-assert provider.redirect_uris[0].url == "https://app.example/auth/callback"
-
-application = Application.objects.get(slug="integration-example")
-assert application.provider_id == provider.pk
-group = Group.objects.get(name="integration-example-users")
-binding = PolicyBinding.objects.get(target=application, group=group)
-assert binding.enabled and not binding.negate and not binding.failure_result
-
-second = Importer.from_string(raw)
-valid, logs = second.validate(raise_validation_errors=True)
-assert valid, logs
-assert second.apply()
-provider.refresh_from_db()
-assert provider.client_secret == secret
-assert OAuth2Provider.objects.filter(name="integration-example-oidc").count() == 1
-assert Application.objects.filter(slug="integration-example").count() == 1
-print("AUTHENTIK_IMPORT_OK")
-' >"$scratch/import.log" 2>&1; then
+if ! docker_cmd exec -i "$server_name" ak shell \
+	<integration/assert-authentik-state.py >"$scratch/import.log" 2>&1; then
 	cat "$scratch/import.log" >&2
 	exit 1
 fi
 grep -Fx AUTHENTIK_IMPORT_OK "$scratch/import.log"
+cleanup_checked
+trap - EXIT HUP INT TERM
+printf '%s\n' DISPOSABLE_CLEANUP_OK

@@ -2,9 +2,10 @@
 
 ## Supported versions
 
-Unreleased Go library and CLI. No version currently carries a separate
-long-term security-support promise. Once releases exist, supported
-versions will be listed here and in the changelog.
+No version has been published, so no released line currently carries a
+security-support promise. After a v1 release exists, only the latest v1 patch is
+supported; superseded patches and Authentik versions other than 2026.5.2 are
+outside the support contract. See `docs/v1-contract.md`.
 
 ## Reporting a vulnerability
 

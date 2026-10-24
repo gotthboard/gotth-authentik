@@ -31,7 +31,8 @@ operator action.
 Provider client IDs, exact redirect URIs, shared authorization/invalidation
 flow slugs, and the signing-key name are explicit. Confidential client secrets
 are not accepted or rendered; Authentik generates one when the provider is
-first created and preserves it on re-import.
+first created and preserves it on re-import. The v1 contract supports
+confidential clients and Authentik 2026.5.2 only.
 
 ```text
 gotth-authentik render manifest.json > application.yaml
@@ -43,21 +44,22 @@ is always a separate, explicit operator action. The retained integration gate
 uses a fresh internal Docker network, PostgreSQL database, Authentik server,
 and worker; it imports twice and destroys all disposable state afterward.
 
-The accepted GOTTH Board alpha.2 blueprint remains provenance. The generic
-example creates a complete application boundary and has been admitted by the
-Authentik 2026.5.2 importer.
+The accepted GOTTH Board alpha.2 blueprint remains provenance. Producer-owned
+Board and WorldWeave fixtures exercise separate profiles; the generic
+two-application oracle creates complete isolated boundaries and has been
+admitted by the Authentik 2026.5.2 importer.
 
 ## Installation, compatibility, and support
 
-Unreleased. The API and CLI are pre-1.0 and may change until the first
-tagged compatibility contract.
+The source is a prepared v1 release candidate pending final admission; it
+remains unpublished, with no v1 tag or hosted Release. The intended stable API, manifest, CLI,
+runtime, and support surface is in [the v1 contract](docs/v1-contract.md).
 
-No post-migration version has been tagged. To inspect the current source
-before the first admitted release:
+Before the first tag, consumers must use an exact reviewed commit rather than a
+moving branch. From a pinned checkout, install the CLI with:
 
 ```sh
-go get github.com/gotthboard/gotth-authentik@main
-go install github.com/gotthboard/gotth-authentik/cmd/gotth-authentik@main
+go install ./cmd/gotth-authentik
 ```
 
 The owner-authored repository contents are licensed under the
@@ -65,4 +67,6 @@ The owner-authored repository contents are licensed under the
 licenses. No long-term support promise is implied. Versioning, release
 admission, security reporting, and contribution details are in
 [the release policy](docs/RELEASING.md), [security policy](SECURITY.md), and
-[contribution guide](CONTRIBUTING.md).
+[contribution guide](CONTRIBUTING.md). Revision-matched and fixture-based
+consumer evidence is separated in
+[the v1 consumer admission](docs/v1-consumer-admission.md).

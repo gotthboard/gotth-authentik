@@ -1,0 +1,20 @@
+{
+  "slug": "integration-sibling",
+  "name": "Integration Sibling",
+  "registration_title": "Register for Integration Sibling",
+  "user_path": "users/integration-sibling",
+  "access_group": "integration-sibling-users",
+  "launch_url": "https://sibling.example/",
+  "provider": {
+    "name": "integration-sibling-oidc",
+    "client_type": "confidential",
+    "client_id": "integration-sibling",
+    "redirect_uris": [
+      "https://sibling.example/auth/callback",
+      "https://sibling.example/auth/secondary-callback"
+    ],
+    "authorization_flow": "default-provider-authorization-implicit-consent",
+    "invalidation_flow": "default-provider-invalidation-flow",
+    "signing_key": "authentik Self-signed Certificate"
+  }
+}

@@ -32,6 +32,8 @@ func TestApplicationValidationAndIsolation(t *testing.T) {
 		{Slug: valid.Slug, Name: valid.Name, RegistrationTitle: valid.RegistrationTitle, UserPath: "groups/no", AccessGroup: valid.AccessGroup},
 		{Slug: valid.Slug, Name: valid.Name, RegistrationTitle: valid.RegistrationTitle, UserPath: "users/Bad", AccessGroup: valid.AccessGroup},
 		{Slug: valid.Slug, Name: valid.Name, RegistrationTitle: valid.RegistrationTitle, UserPath: valid.UserPath, AccessGroup: valid.AccessGroup, LaunchURL: "http://app.example/", Provider: valid.Provider},
+		{Slug: valid.Slug, Name: valid.Name, RegistrationTitle: valid.RegistrationTitle, UserPath: valid.UserPath, AccessGroup: valid.AccessGroup, LaunchURL: "https://APP.example/", Provider: valid.Provider},
+		{Slug: valid.Slug, Name: valid.Name, RegistrationTitle: valid.RegistrationTitle, UserPath: valid.UserPath, AccessGroup: valid.AccessGroup, LaunchURL: "https://app.example/" + strings.Repeat("x", 2049), Provider: valid.Provider},
 		{Slug: valid.Slug, Name: valid.Name, RegistrationTitle: valid.RegistrationTitle, UserPath: valid.UserPath, AccessGroup: valid.AccessGroup, Provider: Provider{}},
 	}
 	for index, application := range invalid {
@@ -62,10 +64,19 @@ func TestProviderValidation(t *testing.T) {
 	}
 	invalid := []Provider{
 		{},
+		{Name: valid.Name, ClientType: "public", ClientID: valid.ClientID, RedirectURIs: valid.RedirectURIs, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
 		{Name: valid.Name, ClientType: "device", ClientID: valid.ClientID, RedirectURIs: valid.RedirectURIs, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
 		{Name: valid.Name, ClientType: valid.ClientType, ClientID: "", RedirectURIs: valid.RedirectURIs, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
 		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
 		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"http://app.example/callback"}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
+		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"https://APP.example/callback"}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
+		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"https://app.example:443/callback"}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
+		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"https://app.example.:8443/callback"}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
+		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"https://app.example:/callback"}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
+		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"https://[0:0:0:0:0:0:0:1]:8443/callback"}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
+		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"https://app.example/%63allback"}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
+		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"https://app.example/a/../callback"}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
+		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"https://127.0.0.01/callback"}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
 		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{valid.RedirectURIs[0], valid.RedirectURIs[0]}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
 		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: make([]string, 33), AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
 		{Name: valid.Name, ClientType: valid.ClientType, ClientID: valid.ClientID, RedirectURIs: []string{"https://app.example/" + strings.Repeat("x", 2049)}, AuthorizationFlow: valid.AuthorizationFlow, InvalidationFlow: valid.InvalidationFlow, SigningKey: valid.SigningKey},
@@ -78,10 +89,9 @@ func TestProviderValidation(t *testing.T) {
 		}
 	}
 	loopback := valid
-	loopback.ClientType = "public"
 	loopback.RedirectURIs = []string{"http://127.0.0.1:8080/callback", "http://[::1]:8080/callback"}
 	if err := loopback.Validate(); err != nil {
-		t.Fatalf("numeric loopback provider rejected: %v", err)
+		t.Fatalf("numeric loopback redirect rejected: %v", err)
 	}
 }
 
@@ -120,7 +130,39 @@ func TestURLValidation(t *testing.T) {
 	if err := ValidateIssuerURL("https://auth.example/application/o/example/"); err != nil {
 		t.Fatalf("issuer rejected: %v", err)
 	}
-	for _, raw := range []string{"/relative", "ftp://auth.example/provider/", "http://auth.example/provider/", "https://user@auth.example/provider/", "https://auth.example/provider/?x=1", "https://auth.example/provider"} {
+	for _, raw := range []string{
+		"/relative",
+		"ftp://auth.example/application/o/example/",
+		"http://auth.example/application/o/example/",
+		"http://127.0.0.1/application/o/example/",
+		"https://user@auth.example/application/o/example/",
+		"https://auth.example/application/o/example/?x=1",
+		"https://auth.example/provider/",
+		"https://auth.example/application/o/wrong/extra/",
+		"https://auth.example/application/o/Bad/",
+		"https://auth.example/application/o/example%2Dapp/",
+		"https://AUTH.example/application/o/example/",
+		"https://auth.example:443/application/o/example/",
+		"https://auth.example.:8443/application/o/example/",
+		"https://auth.example:/application/o/example/",
+		"https://auth.example:0443/application/o/example/",
+		"https://auth.example:65536/application/o/example/",
+		"https://127.0.0.01/application/o/example/",
+		"https://127.1/application/o/example/",
+		"https://2130706433/application/o/example/",
+		"https://0x7f000001/application/o/example/",
+		"https://0x7f.1/application/o/example/",
+		"https://127.0x0.1/application/o/example/",
+		"https://127.0x.1/application/o/example/",
+		"https://0x.1/application/o/example/",
+		"https://0x.0x/application/o/example/",
+		"https://example.1/application/o/example/",
+		"https://auth..example/application/o/example/",
+		"https://-auth.example/application/o/example/",
+		"https://auth_example/application/o/example/",
+		"https://auth.example/application/o/example/%2E%2E/",
+		"https://auth.example/application/o/example",
+	} {
 		if err := ValidateIssuerURL(raw); err == nil {
 			t.Errorf("issuer %q passed", raw)
 		}
@@ -132,6 +174,14 @@ func TestURLValidation(t *testing.T) {
 		{"https://other.example/if/flow/example/", "https://auth.example/", "example"},
 		{"https://auth.example/if/flow/wrong/", "https://auth.example/", "example"},
 		{"https://auth.example/if/flow/example/?x=1", "https://auth.example/", "example"},
+		{"https://auth.example/if/flow/example%2Denrollment/", "https://auth.example/", "example-enrollment"},
+		{"http://127.0.0.1/if/flow/example/", "https://auth.example/", "example"},
+		{"https://auth.example/if/flow/example/", "http://127.0.0.1/", "example"},
+		{"https://auth.example/if/flow/example/", "https://auth.example/%2F", "example"},
+		{"https://AUTH.example/if/flow/example/", "https://auth.example/", "example"},
+		{"https://auth.example/if/flow/example/", "https://AUTH.example/", "example"},
+		{"https://auth.example:0443/if/flow/example/", "https://auth.example:0443/", "example"},
+		{"https://127.0.0.01/if/flow/example/", "https://127.0.0.01/", "example"},
 		{"https://auth.example/if/flow/example/", "https://auth.example/base/", "example"},
 		{"https://auth.example/if/flow/example/", "https://auth.example/", "Bad"},
 	} {

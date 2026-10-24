@@ -12,3 +12,6 @@
 8. Complete alpha.3 coding-setup admission: canonical package layout,
    requirement/runtime/performance records, clean clone, and two clean Judge
    passes.
+9. Freeze the confidential-client v1 API, manifest, CLI, runtime, and support
+   contract; add an independent golden; expand the disposable oracle to two
+   complete isolated applications; and admit revision-matched consumer evidence.

@@ -48,6 +48,23 @@ func TestRunRenderAndCheck(t *testing.T) {
 	if err := run([]string{"check", manifest, blueprint}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("run(check) returned error: %v", err)
 	}
+	maximumLaunch := "https://app.example/" + strings.Repeat("x", 2048-len("https://app.example/"))
+	maximumManifest := filepath.Join(directory, "maximum-manifest.json")
+	maximumRaw := strings.Replace(validManifest, "https://app.example/", maximumLaunch, 1)
+	if err := os.WriteFile(maximumManifest, []byte(maximumRaw), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	output.Reset()
+	if err := run([]string{"render", maximumManifest}, &output); err != nil || output.Len() > maxBlueprintBytes {
+		t.Fatalf("maximum render = (%d bytes, %v)", output.Len(), err)
+	}
+	maximumBlueprint := filepath.Join(directory, "maximum-blueprint.yaml")
+	if err := os.WriteFile(maximumBlueprint, output.Bytes(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := run([]string{"check", maximumManifest, maximumBlueprint}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("maximum check returned error: %v", err)
+	}
 	if err := run([]string{"render", manifest}, failingWriter{}); err == nil {
 		t.Fatal("render output error was hidden")
 	}
@@ -78,6 +95,10 @@ func TestRunRejectsBadInputs(t *testing.T) {
 		t.Fatal(err)
 	}
 	missing := filepath.Join(directory, "missing")
+	oversizeBlueprint := filepath.Join(directory, "oversize-blueprint.yaml")
+	if err := os.WriteFile(oversizeBlueprint, []byte(strings.Repeat("x", maxBlueprintBytes+1)), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	invalidApplication := filepath.Join(directory, "invalid-application.json")
 	if err := os.WriteFile(invalidApplication, []byte(`{}`), 0o600); err != nil {
 		t.Fatal(err)
@@ -94,6 +115,7 @@ func TestRunRejectsBadInputs(t *testing.T) {
 		{"render", invalidApplication},
 		{"render", directory},
 		{"check", valid, missing},
+		{"check", valid, oversizeBlueprint},
 	} {
 		if err := run(arguments, &bytes.Buffer{}); err == nil {
 			t.Errorf("run(%v) returned no error", arguments)
